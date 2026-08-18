@@ -391,6 +391,7 @@ persistência somente após `Aplicar`, e tanto o navegador quanto a página
 | `accounts` | entidade e persistência de contas |
 | `alerts` | diálogos, abertura HTTPS externa e feedback compartilhados |
 | `browser` | perfis, páginas, sidebar, scripts e navegação |
+| `chat_sync` | captura contínua de mensagens para SQLite via WA-JS, com backfill e MCP read-only |
 | `customizations` | CSS, JavaScript e extensões por escopo |
 | `dictionaries` | descoberta, seleção global/migração e instalação de dicionários WebEngine |
 | `donation` | lembrete, métodos oficiais e página nativa de apoio |
@@ -485,6 +486,7 @@ Este bloco é verificado automaticamente contra
 - `zapzap.features.browser`
 - `zapzap.features.browser.shell`
 - `zapzap.features.browser.web`
+- `zapzap.features.chat_sync`
 - `zapzap.features.customizations`
 - `zapzap.features.dictionaries`
 - `zapzap.features.donation`

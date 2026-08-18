@@ -123,6 +123,9 @@ documente o que ele protege.
 - `test_appimage_packaging.py`
 - `test_browser_account_lifecycle.py`
 - `test_browser_page_button_ui.py`
+- `test_chat_sync_db.py`
+- `test_chat_sync_logic.py`
+- `test_chat_sync_paths.py`
 - `test_check_box.py`
 - `test_component_typography.py`
 - `test_debugging_settings_ui.py`

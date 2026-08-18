@@ -69,6 +69,7 @@ packages = [
   "zapzap.features.settings.pages.permissions",
   "zapzap.features.settings.pages.system_startup",
   "zapzap.features.alerts",
+  "zapzap.features.chat_sync",
   "zapzap.features.customizations",
   "zapzap.features.dictionaries",
   "zapzap.features.donation",
@@ -97,6 +98,7 @@ zapzap = [
   "js/*",
   "extensions/*",
   "features/browser/web/scripts/*.js",
+  "features/chat_sync/scripts/*.js",
   "features/export_chat/scripts/*.js",
 ]
 

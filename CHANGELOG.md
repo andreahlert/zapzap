@@ -28,6 +28,12 @@ releases and the AppStream metadata.
   `<export>_media` folder, and referenced in the transcript as
   `<name> (file attached)`. Attachments that fail keep the `<Media omitted>`
   placeholder.
+- Added a "Sync chats to database" toggle that continuously captures the
+  active account's messages into a local SQLite store
+  (`~/.local/share/zapzap/messages.db`, `chmod 600`) via the injected WA-JS
+  engine: full backfill on first run, per-chat cursor deltas on later opens,
+  and live capture while the app is open. Optional media is downloaded to a
+  sibling `chat_media/` folder. New `zapzap.features.chat_sync` package.
 
 ## [7.4.2] - 2026-08-14
 
