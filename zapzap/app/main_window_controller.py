@@ -276,12 +276,21 @@ class MainWindowController(MainWindowView):
             from zapzap.features.chat_sync.sync_engine import ChatSyncEngine
             engine = ChatSyncEngine(page.page(), self)
             self._chat_sync_engine = engine
+            engine.state_changed.connect(self._on_chat_sync_state)
             engine.start()
         else:
             if self._chat_sync_engine is not None:
                 self._chat_sync_engine.stop()
                 self._chat_sync_engine.deleteLater()
                 self._chat_sync_engine = None
+
+    def _on_chat_sync_state(self, state):
+        if state == "error" and self._chat_sync_engine is not None:
+            self._chat_sync_engine.deleteLater()
+            self._chat_sync_engine = None
+            self.actionSync_chats.blockSignals(True)
+            self.actionSync_chats.setChecked(False)
+            self.actionSync_chats.blockSignals(False)
 
     def _reset_zoom(self):
         """Resetar o fator de zoom da página atual."""
