@@ -53,6 +53,7 @@ class MainWindowController(MainWindowView):
         self._last_sanitized_key = None
         self._send_message_dialog = None
         self._export_chat_controller = None
+        self._chat_sync_engine = None
         self.theme_action_group = None
         self._setup_ui()
         self.update_state.changed.connect(self._on_update_info_changed)
@@ -139,6 +140,7 @@ class MainWindowController(MainWindowView):
         self.actionNew_chat.triggered.connect(self.new_chat)
         self.actionBy_phone_number.triggered.connect(self.new_chat_by_phone)
         self.actionExport_chat.triggered.connect(self.export_chat)
+        self.actionSync_chats.toggled.connect(self.toggle_chat_sync)
         self.actionSobre_o_ZapZap.triggered.connect(self.open_about)
 
     def _connect_view_menu_actions(self):
@@ -261,6 +263,25 @@ class MainWindowController(MainWindowView):
         self._export_chat_controller = None
         if controller is not None:
             controller.deleteLater()
+
+    def toggle_chat_sync(self, enabled):
+        """Start or stop background capture for the active account."""
+        if enabled:
+            page = self._current_page_or_alert()
+            if page is None:
+                self.actionSync_chats.blockSignals(True)
+                self.actionSync_chats.setChecked(False)
+                self.actionSync_chats.blockSignals(False)
+                return
+            from zapzap.features.chat_sync.sync_engine import ChatSyncEngine
+            engine = ChatSyncEngine(page.page(), self)
+            self._chat_sync_engine = engine
+            engine.start()
+        else:
+            if self._chat_sync_engine is not None:
+                self._chat_sync_engine.stop()
+                self._chat_sync_engine.deleteLater()
+                self._chat_sync_engine = None
 
     def _reset_zoom(self):
         """Resetar o fator de zoom da página atual."""
