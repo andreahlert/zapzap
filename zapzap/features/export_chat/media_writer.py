@@ -61,6 +61,11 @@ def _extension(mimetype: str, fallback: str = "") -> str:
     return guessed or fallback
 
 
+def guess_extension(mimetype: str, fallback: str = ".bin") -> str:
+    """Public helper: file extension for a mimetype, with a fallback."""
+    return _extension(mimetype, fallback)
+
+
 def build_filename(row, index: int) -> str:
     """Build a unique, safe attachment file name for a media row."""
     original = row.get("filename", "")

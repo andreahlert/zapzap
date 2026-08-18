@@ -70,6 +70,10 @@ class MediaWriterTests(unittest.TestCase):
         output = format_rows(rows, {}).strip()
         self.assertIn(": <Media omitted>", output)
 
+    def test_guess_extension_public_helper(self):
+        self.assertEqual(media_writer.guess_extension("image/jpeg"), ".jpg")
+        self.assertEqual(media_writer.guess_extension("", ".dat"), ".dat")
+
 
 if __name__ == "__main__":
     unittest.main()
