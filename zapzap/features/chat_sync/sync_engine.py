@@ -40,9 +40,11 @@ class ChatSyncEngine(QObject):
         super().__init__(parent)
         self._page = page
         self._db = None
+        self._bundle_js = None
         self._provider = WaJsProvider(self)
         self._provider.ready.connect(self._on_bundle_ready)
         self._provider.failed.connect(self._on_bundle_failed)
+        self._page.loadFinished.connect(self._on_page_reloaded)
 
         self._poll_timer = QTimer(self)
         self._poll_timer.setInterval(POLL_INTERVAL_MS)
@@ -61,6 +63,7 @@ class ChatSyncEngine(QObject):
         self._chat_index = 0
         self._page_cursor = None
         self._media_queue = []
+        self._media_active = False
 
     # === Lifecycle ===
 
@@ -80,6 +83,8 @@ class ChatSyncEngine(QObject):
         self._live_timer.stop()
         self._stop_polling()
         self._provider.abort()
+        self._media_active = False
+        self._media_queue = []
         if self._db is not None:
             self._db.close()
             self._db = None
@@ -93,10 +98,20 @@ class ChatSyncEngine(QObject):
     def _on_bundle_ready(self, bundle_js):
         if not self._running:
             return
+        self._bundle_js = bundle_js
         self._page.runJavaScript(
             "if (typeof window.WPP === 'undefined') {\n" + bundle_js + "\n}")
         self._page.runJavaScript(self._helper_source())
         self._wait_engine_ready()
+
+    def _on_page_reloaded(self, ok=True):
+        if not ok or not self._running or self._bundle_js is None:
+            return
+        # WhatsApp Web reloaded: the helper is gone. Re-inject and reconcile.
+        self._stop_polling()
+        self._live_timer.stop()
+        self._media_active = False
+        self._on_bundle_ready(self._bundle_js)
 
     def _wait_engine_ready(self):
         generation = self._new_generation()
@@ -209,9 +224,10 @@ class ChatSyncEngine(QObject):
                 self._media_queue.append(row)
 
     def _drain_media(self):
-        if not self._running or not self._media_queue:
+        if not self._running or self._media_active or not self._media_queue:
             return
         row = self._media_queue.pop(0)
+        self._media_active = True
         self._page.runJavaScript(
             "window._zapzapSync.downloadMedia({})".format(
                 json.dumps(row["id"])))
@@ -223,7 +239,7 @@ class ChatSyncEngine(QObject):
         if data_url:
             try:
                 ext = media_writer.guess_extension(row.get("mimetype", ""))
-                safe_id = row["id"].replace("/", "_").replace(":", "_")
+                safe_id = media_writer._sanitize(row["id"])
                 filename = safe_id + ext
                 directory = paths.media_dir()
                 os.makedirs(directory, exist_ok=True)
@@ -234,15 +250,18 @@ class ChatSyncEngine(QObject):
                     row.get("mimetype", ""), filename)
             except (OSError, ValueError):
                 logger.exception("Failed to save synced media")
+        self._media_active = False
         self._drain_media()
 
     def _on_media_error(self, row, message):
         logger.warning("Media sync failed for %s: %s", row.get("id"), message)
+        self._media_active = False
         self._drain_media()
 
     # === Live ===
 
     def _start_live(self):
+        self._enqueue_media(self._db.iter_pending_media())
         self._live_timer.start()
         self._drain_media()
 
@@ -259,10 +278,12 @@ class ChatSyncEngine(QObject):
         self._db.upsert_messages(rows)
         for row in rows:
             cur = self._db.get_chat_cursor(row["chat_id"])
+            is_group = cur["is_group"] if cur else (
+                1 if str(row["chat_id"]).endswith("@g.us") else 0)
+            backfill_done = cur["backfill_done"] if cur else 0
             self._db.set_chat(
                 row["chat_id"], row.get("chat_name") or row["chat_id"],
-                cur["is_group"] if cur else 0, row["ts"], row["id"],
-                cur["backfill_done"] if cur else 0)
+                is_group, row["ts"], row["id"], backfill_done)
         self._enqueue_media(rows)
         self._drain_media()
 

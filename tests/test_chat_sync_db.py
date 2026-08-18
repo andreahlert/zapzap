@@ -110,6 +110,46 @@ class ChatSyncDBWriteTests(unittest.TestCase):
         self.assertEqual(group_cursor["is_group"], 1)
 
 
+class ChatSyncDBPendingMediaTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.db = ChatSyncDB(os.path.join(self.tmp.name, "d", "m.db"))
+        self.db.initialize()
+        base = {"chat_id": "c1@x", "chat_name": "Alice", "sender_id": "c1@x",
+                "sender_name": "Alice", "ts": 100, "body": "", "caption": "",
+                "from_me": 0, "mimetype": "", "filename": ""}
+        self.db.upsert_messages([
+            {**base, "id": "img_pending", "type": "image"},
+            {**base, "id": "vid_pending", "type": "video"},
+            {**base, "id": "img_done", "type": "image"},
+            {**base, "id": "text_pending", "type": "chat"},
+        ])
+        # A downloaded image is no longer pending.
+        self.db.set_media_path("img_done", "/media/img_done.jpg",
+                               "image/jpeg", "img_done.jpg")
+        # Carry a mimetype on a still-pending row to exercise the shape.
+        self.db.conn.execute(
+            "UPDATE messages SET media_mime='image/png' WHERE id='img_pending'")
+        self.db.conn.commit()
+
+    def tearDown(self):
+        self.db.close()
+        self.tmp.cleanup()
+
+    def test_returns_only_downloadable_pending_rows(self):
+        ids = {r["id"] for r in self.db.iter_pending_media()}
+        # Text is not downloadable; the downloaded image is excluded.
+        self.assertEqual(ids, {"img_pending", "vid_pending"})
+
+    def test_result_shape_maps_media_mime_to_mimetype(self):
+        pending = {r["id"]: r for r in self.db.iter_pending_media()}
+        row = pending["img_pending"]
+        self.assertEqual(set(row.keys()), {"id", "chat_id", "type", "mimetype"})
+        self.assertEqual(row["chat_id"], "c1@x")
+        self.assertEqual(row["type"], "image")
+        self.assertEqual(row["mimetype"], "image/png")
+
+
 class ChatSyncDBReadTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()

@@ -133,6 +133,15 @@ class ChatSyncDB:
         )
         self.conn.commit()
 
+    def iter_pending_media(self):
+        rows = self.conn.execute(
+            "SELECT id, chat_id, type, media_mime FROM messages "
+            "WHERE media_path IS NULL AND type IN "
+            "('image','video','audio','ptt','sticker','document','gif')"
+        ).fetchall()
+        return [{"id": r["id"], "chat_id": r["chat_id"], "type": r["type"],
+                 "mimetype": r["media_mime"]} for r in rows]
+
     def set_media_path(self, message_id, media_path, media_mime,
                        media_filename) -> None:
         self.conn.execute(
