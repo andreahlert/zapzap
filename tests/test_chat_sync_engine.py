@@ -79,6 +79,34 @@ class ChatSyncEngineMediaGuardTests(unittest.TestCase):
         self.assertEqual(len(self.page.download_calls()), 2)
 
 
+class ChatSyncEngineTimeoutTests(unittest.TestCase):
+    def setUp(self):
+        self.app = QCoreApplication.instance() or QCoreApplication([])
+        self.page = _StubPage()
+        self.engine = ChatSyncEngine(self.page)
+        self.engine._running = True
+
+    def tearDown(self):
+        self.engine._running = False
+        self.engine._stop_polling()
+
+    def test_media_timeout_releases_guard(self):
+        # Set up media queue with one item
+        self.engine._media_queue = [
+            {"id": "m1", "type": "image", "mimetype": ""}
+        ]
+        # Drain first item: starts task polling and sets _media_active
+        self.engine._drain_media()
+        self.assertTrue(self.engine._media_active)
+
+        # Simulate the poll never resolving: force elapsed clock past timeout
+        self.engine._poll_elapsed_ms = self.engine._poll_timeout_ms + 1
+        # Timeout fires on_error("timeout"), which clears _media_active guard
+        self.engine._poll_tick()
+        # After timeout, the guard must be released (not stuck True)
+        self.assertFalse(self.engine._media_active)
+
+
 class ChatSyncEngineLiveGroupTests(unittest.TestCase):
     def setUp(self):
         self.app = QCoreApplication.instance() or QCoreApplication([])

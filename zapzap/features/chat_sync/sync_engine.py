@@ -50,6 +50,7 @@ class ChatSyncEngine(QObject):
         self._poll_timer.setInterval(POLL_INTERVAL_MS)
         self._poll_timer.timeout.connect(self._poll_tick)
         self._poll_handler = None
+        self._poll_on_timeout = None
         self._poll_elapsed_ms = 0
         self._poll_timeout_ms = 0
         self._poll_generation = 0
@@ -298,7 +299,14 @@ class ChatSyncEngine(QObject):
                 lambda outcome: self._on_task_poll(
                     outcome, on_result, on_error, generation))
 
-        self._start_polling(tick, TASK_TIMEOUT_MS)
+        def on_timeout():
+            if (self._running and generation == self._poll_generation
+                    and on_error is not None):
+                logger.warning(
+                    "chat_sync task timed out after %d ms", TASK_TIMEOUT_MS)
+                on_error("timeout")
+
+        self._start_polling(tick, TASK_TIMEOUT_MS, on_timeout)
 
     def _on_task_poll(self, outcome, on_result, on_error, generation):
         if not self._running or generation != self._poll_generation:
@@ -322,8 +330,9 @@ class ChatSyncEngine(QObject):
         self._poll_generation += 1
         return self._poll_generation
 
-    def _start_polling(self, handler, timeout_ms):
+    def _start_polling(self, handler, timeout_ms, on_timeout=None):
         self._poll_handler = handler
+        self._poll_on_timeout = on_timeout
         self._poll_elapsed_ms = 0
         self._poll_timeout_ms = timeout_ms
         self._poll_timer.start()
@@ -331,7 +340,10 @@ class ChatSyncEngine(QObject):
     def _poll_tick(self):
         self._poll_elapsed_ms += POLL_INTERVAL_MS
         if self._poll_elapsed_ms > self._poll_timeout_ms:
+            on_timeout = self._poll_on_timeout
             self._stop_polling()
+            if on_timeout is not None:
+                on_timeout()
             return
         if self._poll_handler is not None:
             self._poll_handler()
@@ -339,6 +351,7 @@ class ChatSyncEngine(QObject):
     def _stop_polling(self):
         self._poll_timer.stop()
         self._poll_handler = None
+        self._poll_on_timeout = None
 
     @staticmethod
     def _helper_source() -> str:
