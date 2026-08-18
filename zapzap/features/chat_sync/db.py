@@ -104,13 +104,14 @@ class ChatSyncDB:
 
     def get_chat_cursor(self, chat_id):
         row = self.conn.execute(
-            "SELECT last_synced_ts, last_synced_id, backfill_done "
+            "SELECT is_group, last_synced_ts, last_synced_id, backfill_done "
             "FROM chats WHERE id = ?",
             (chat_id,),
         ).fetchone()
         if row is None:
             return None
         return {
+            "is_group": row["is_group"],
             "last_synced_ts": row["last_synced_ts"],
             "last_synced_id": row["last_synced_id"],
             "backfill_done": row["backfill_done"],

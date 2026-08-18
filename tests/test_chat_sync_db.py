@@ -103,6 +103,11 @@ class ChatSyncDBWriteTests(unittest.TestCase):
         self.assertEqual(cursor["last_synced_ts"], 200)
         self.assertEqual(cursor["last_synced_id"], "m9")
         self.assertEqual(cursor["backfill_done"], 1)
+        self.assertEqual(cursor["is_group"], 0)
+
+        self.db.set_chat("g1@x", "Group", 1, 300, "m10", 1)
+        group_cursor = self.db.get_chat_cursor("g1@x")
+        self.assertEqual(group_cursor["is_group"], 1)
 
 
 class ChatSyncDBReadTests(unittest.TestCase):

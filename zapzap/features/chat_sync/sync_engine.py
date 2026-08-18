@@ -118,7 +118,9 @@ class ChatSyncEngine(QObject):
         self._page.runJavaScript(
             "window._zapzapSync.startLive({})".format(json.dumps(_("You"))))
         self._page.runJavaScript("window._zapzapSync.listChats()")
-        self._start_task_polling(self._on_chats_listed)
+        self._start_task_polling(
+            self._on_chats_listed,
+            on_error=lambda message: self._on_list_failed(message))
 
     # === Reconcile / backfill ===
 
@@ -126,6 +128,10 @@ class ChatSyncEngine(QObject):
         self._chats = chats or []
         self._chat_index = 0
         self._sync_next_chat()
+
+    def _on_list_failed(self, message):
+        logger.warning("chat_sync listChats failed: %s", message)
+        self._start_live()
 
     def _sync_next_chat(self):
         if not self._running:
@@ -140,7 +146,8 @@ class ChatSyncEngine(QObject):
             "window._zapzapSync.getMessagesSince({}, {}, null)".format(
                 json.dumps(chat["id"]), PAGE_SIZE))
         self._start_task_polling(
-            lambda rows: self._on_chat_page(chat, rows))
+            lambda rows: self._on_chat_page(chat, rows),
+            on_error=lambda message: self._on_chat_page_failed(chat, message))
 
     def _on_chat_page(self, chat, rows):
         # rows are newest-first; rows[-1] is the oldest of this page.
@@ -177,12 +184,20 @@ class ChatSyncEngine(QObject):
                 "window._zapzapSync.getMessagesSince({}, {}, {})".format(
                     json.dumps(chat["id"]), PAGE_SIZE, json.dumps(oldest_id)))
             self._start_task_polling(
-                lambda more: self._on_chat_page(chat, more))
+                lambda more: self._on_chat_page(chat, more),
+                on_error=lambda message: self._on_chat_page_failed(
+                    chat, message))
             return
 
         final_ts, final_id = self._page_cursor or (last_ts or 0, last_id)
         self._db.set_chat(chat["id"], chat["name"], is_group,
                           final_ts, final_id, 1)
+        self._chat_index += 1
+        self._sync_next_chat()
+
+    def _on_chat_page_failed(self, chat, message):
+        logger.warning("chat_sync getMessagesSince failed for %s: %s",
+                       chat.get("id"), message)
         self._chat_index += 1
         self._sync_next_chat()
 
@@ -246,7 +261,7 @@ class ChatSyncEngine(QObject):
             cur = self._db.get_chat_cursor(row["chat_id"])
             self._db.set_chat(
                 row["chat_id"], row.get("chat_name") or row["chat_id"],
-                0, row["ts"], row["id"],
+                cur["is_group"] if cur else 0, row["ts"], row["id"],
                 cur["backfill_done"] if cur else 0)
         self._enqueue_media(rows)
         self._drain_media()
