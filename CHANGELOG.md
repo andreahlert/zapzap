@@ -13,6 +13,22 @@ releases and the AppStream metadata.
 
 ## [Unreleased]
 
+### Added
+
+- Added a "Export chat…" action in the Chat menu that exports a chat
+  transcript to a text file in the mobile export layout. The flow injects the
+  WPPConnect WA-JS bundle (downloaded once and cached under the application
+  data directory) into the active account's WhatsApp Web page, lists chats,
+  and fetches the last 100/1000 messages or the entire history. New
+  `zapzap.features.export_chat` and `zapzap.features.export_chat.ui` packages
+  were registered in `pyproject.toml` and in the architecture inventories.
+- Added optional media download to the chat export: when enabled, image,
+  video, audio, voice, sticker, document, and GIF attachments are decrypted
+  through WA-JS one at a time (with progress), saved to a sibling
+  `<export>_media` folder, and referenced in the transcript as
+  `<name> (file attached)`. Attachments that fail keep the `<Media omitted>`
+  placeholder.
+
 ## [7.4.2] - 2026-08-14
 
 ### Fixed

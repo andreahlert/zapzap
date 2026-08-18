@@ -395,6 +395,7 @@ persistência somente após `Aplicar`, e tanto o navegador quanto a página
 | `dictionaries` | descoberta, seleção global/migração e instalação de dicionários WebEngine |
 | `donation` | lembrete, métodos oficiais e página nativa de apoio |
 | `downloads` | destino, nome seguro e diálogo de progresso |
+| `export_chat` | exportação de conversas em texto e mídia via WA-JS injetado na página |
 | `initial_setup` | onboarding e persistência das escolhas iniciais |
 | `notifications` | fachada, backends e ativação da janela |
 | `permissions` | permissões WebEngine por conta |
@@ -489,6 +490,8 @@ Este bloco é verificado automaticamente contra
 - `zapzap.features.donation`
 - `zapzap.features.downloads`
 - `zapzap.features.downloads.ui`
+- `zapzap.features.export_chat`
+- `zapzap.features.export_chat.ui`
 - `zapzap.features.initial_setup`
 - `zapzap.features.notifications`
 - `zapzap.features.permissions`

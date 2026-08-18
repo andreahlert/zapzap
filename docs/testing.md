@@ -131,6 +131,8 @@ documente o que ele protege.
 - `test_dictionary_options.py`
 - `test_documentation_structure.py`
 - `test_donations_page.py`
+- `test_export_chat_formatter.py`
+- `test_export_chat_media_writer.py`
 - `test_external_link_lifecycle.py`
 - `test_gpu_environment.py`
 - `test_grid_thumbnail_cache.py`

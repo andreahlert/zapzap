@@ -74,6 +74,8 @@ packages = [
   "zapzap.features.donation",
   "zapzap.features.downloads",
   "zapzap.features.downloads.ui",
+  "zapzap.features.export_chat",
+  "zapzap.features.export_chat.ui",
   "zapzap.features.initial_setup",
   "zapzap.features.notifications",
   "zapzap.features.permissions",
@@ -95,6 +97,7 @@ zapzap = [
   "js/*",
   "extensions/*",
   "features/browser/web/scripts/*.js",
+  "features/export_chat/scripts/*.js",
 ]
 
 [tool.setuptools.dynamic]
