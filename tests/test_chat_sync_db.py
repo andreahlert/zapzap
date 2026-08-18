@@ -90,3 +90,42 @@ class ChatSyncDBWriteTests(unittest.TestCase):
         self.assertEqual(cursor["last_synced_ts"], 200)
         self.assertEqual(cursor["last_synced_id"], "m9")
         self.assertEqual(cursor["backfill_done"], 1)
+
+
+class ChatSyncDBReadTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.db = ChatSyncDB(os.path.join(self.tmp.name, "d", "m.db"))
+        self.db.initialize()
+        base = {"chat_id": "c1", "chat_name": "Alice", "sender_id": "c1",
+                "sender_name": "Alice", "type": "chat", "caption": "",
+                "from_me": 0, "mimetype": "", "filename": ""}
+        self.db.upsert_messages([
+            {**base, "id": "a", "ts": 100, "body": "hello world"},
+            {**base, "id": "b", "ts": 200, "body": "goodbye"},
+        ])
+        self.db.set_chat("c1", "Alice", 0, 200, "b", 1)
+
+    def tearDown(self):
+        self.db.close()
+        self.tmp.cleanup()
+
+    def test_list_chats_reports_count_and_last_ts(self):
+        chats = self.db.list_chats()
+        self.assertEqual(len(chats), 1)
+        self.assertEqual(chats[0]["message_count"], 2)
+        self.assertEqual(chats[0]["last_ts"], 200)
+
+    def test_get_messages_since_filters_and_orders(self):
+        rows = self.db.get_messages("c1", since_ts=100)
+        self.assertEqual([r["id"] for r in rows], ["b"])
+
+    def test_search_matches_body(self):
+        rows = self.db.search("hello")
+        self.assertEqual([r["id"] for r in rows], ["a"])
+
+    def test_stats_totals(self):
+        stats = self.db.stats()
+        self.assertEqual(stats["message_count"], 2)
+        self.assertEqual(stats["chat_count"], 1)
+        self.assertEqual(stats["last_ts"], 200)

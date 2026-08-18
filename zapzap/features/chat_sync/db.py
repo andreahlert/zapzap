@@ -135,3 +135,69 @@ class ChatSyncDB:
             (media_path, media_mime, media_filename, message_id),
         )
         self.conn.commit()
+
+    @staticmethod
+    def _message_dict(row):
+        return {
+            "id": row["id"], "chat_id": row["chat_id"],
+            "chat_name": row["chat_name"], "sender_id": row["sender_id"],
+            "sender_name": row["sender_name"], "ts": row["ts"],
+            "type": row["type"], "body": row["body"],
+            "caption": row["caption"], "from_me": row["from_me"],
+            "media_path": row["media_path"], "media_mime": row["media_mime"],
+            "media_filename": row["media_filename"],
+        }
+
+    def list_chats(self):
+        rows = self.conn.execute(
+            "SELECT c.id AS id, c.name AS name, c.is_group AS is_group, "
+            " COUNT(m.id) AS message_count, MAX(m.ts) AS last_ts "
+            "FROM chats c LEFT JOIN messages m ON m.chat_id = c.id "
+            "GROUP BY c.id ORDER BY last_ts DESC"
+        ).fetchall()
+        return [
+            {"id": r["id"], "name": r["name"], "is_group": r["is_group"],
+             "message_count": r["message_count"], "last_ts": r["last_ts"]}
+            for r in rows
+        ]
+
+    def get_messages(self, chat_id, since_ts=None, limit=100, offset=0):
+        if since_ts is None:
+            rows = self.conn.execute(
+                "SELECT * FROM messages WHERE chat_id=? "
+                "ORDER BY ts ASC LIMIT ? OFFSET ?",
+                (chat_id, limit, offset),
+            ).fetchall()
+        else:
+            rows = self.conn.execute(
+                "SELECT * FROM messages WHERE chat_id=? AND ts > ? "
+                "ORDER BY ts ASC LIMIT ? OFFSET ?",
+                (chat_id, since_ts, limit, offset),
+            ).fetchall()
+        return [self._message_dict(r) for r in rows]
+
+    def search(self, query, chat_id=None, limit=100):
+        like = "%" + query + "%"
+        if chat_id is None:
+            rows = self.conn.execute(
+                "SELECT * FROM messages WHERE body LIKE ? OR caption LIKE ? "
+                "ORDER BY ts DESC LIMIT ?",
+                (like, like, limit),
+            ).fetchall()
+        else:
+            rows = self.conn.execute(
+                "SELECT * FROM messages WHERE chat_id=? AND "
+                "(body LIKE ? OR caption LIKE ?) ORDER BY ts DESC LIMIT ?",
+                (chat_id, like, like, limit),
+            ).fetchall()
+        return [self._message_dict(r) for r in rows]
+
+    def stats(self):
+        message_count = self.conn.execute(
+            "SELECT COUNT(*) FROM messages").fetchone()[0]
+        chat_count = self.conn.execute(
+            "SELECT COUNT(*) FROM chats").fetchone()[0]
+        last_ts = self.conn.execute(
+            "SELECT MAX(ts) FROM messages").fetchone()[0]
+        return {"message_count": message_count, "chat_count": chat_count,
+                "last_ts": last_ts}
