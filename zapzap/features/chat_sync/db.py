@@ -81,17 +81,22 @@ class ChatSyncDB:
         sql = (
             "INSERT INTO messages "
             "(id, chat_id, chat_name, sender_id, sender_name, ts, type, "
-            " body, caption, from_me) "
+            " body, caption, from_me, media_path, media_mime, media_filename) "
             "VALUES (:id, :chat_id, :chat_name, :sender_id, :sender_name, "
-            " :ts, :type, :body, :caption, :from_me) "
+            " :ts, :type, :body, :caption, :from_me, :media_path, :media_mime, "
+            " :media_filename) "
             "ON CONFLICT(id) DO UPDATE SET "
             " chat_id=excluded.chat_id, chat_name=excluded.chat_name, "
             " sender_id=excluded.sender_id, sender_name=excluded.sender_name, "
             " ts=excluded.ts, type=excluded.type, body=excluded.body, "
-            " caption=excluded.caption, from_me=excluded.from_me"
+            " caption=excluded.caption, from_me=excluded.from_me, "
+            " media_path=COALESCE(excluded.media_path, messages.media_path), "
+            " media_mime=COALESCE(excluded.media_mime, messages.media_mime), "
+            " media_filename=COALESCE(excluded.media_filename, messages.media_filename)"
         )
         payload = [
-            {key: row.get(key) for key in self._MESSAGE_COLUMNS}
+            {**{key: row.get(key) for key in self._MESSAGE_COLUMNS},
+             "media_path": None, "media_mime": None, "media_filename": None}
             for row in rows
         ]
         self.conn.executemany(sql, payload)

@@ -83,6 +83,19 @@ class ChatSyncDBWriteTests(unittest.TestCase):
             "SELECT media_path FROM messages WHERE id='m1'").fetchone()[0]
         self.assertEqual(path, "/media/00001.jpg")
 
+    def test_upsert_preserves_all_media_columns_via_coalesce(self):
+        # Insert initial message, set media, then re-sync with fresh content.
+        self.db.upsert_messages([self._row(type="image")])
+        self.db.set_media_path("m1", "/media/00001.jpg", "image/jpeg",
+                               "00001.jpg")
+        # Re-sync the same message with updated body and caption; media must be preserved.
+        self.db.upsert_messages([self._row(type="image", body="updated", caption="new caption")])
+        row = self.db.conn.execute(
+            "SELECT media_path, media_mime, media_filename FROM messages WHERE id='m1'").fetchone()
+        self.assertEqual(row["media_path"], "/media/00001.jpg")
+        self.assertEqual(row["media_mime"], "image/jpeg")
+        self.assertEqual(row["media_filename"], "00001.jpg")
+
     def test_chat_cursor_roundtrip(self):
         self.assertIsNone(self.db.get_chat_cursor("c1@x"))
         self.db.set_chat("c1@x", "Alice", 0, 200, "m9", 1)
