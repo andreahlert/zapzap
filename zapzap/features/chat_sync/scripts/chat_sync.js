@@ -30,6 +30,11 @@
             contact.pushname || widToString(chat.id);
     }
 
+    var MEDIA_TYPES = {
+        image: 1, video: 1, audio: 1, ptt: 1,
+        document: 1, sticker: 1, gif: 1,
+    };
+
     function normalize(message) {
         var fromMe = !!(message.fromMe ||
             (message.id && message.id.fromMe));
@@ -45,7 +50,11 @@
             sender_name: fromMe ? meLabel : (message.notifyName || ''),
             ts: message.t || 0,
             type: message.type || 'chat',
-            body: typeof message.body === 'string' ? message.body : '',
+            // WhatsApp puts base64 thumbnail/media data in `body` for media
+            // messages; keep only real text (chat types). Captions are stored
+            // separately below and media bytes are fetched via downloadMedia.
+            body: (!MEDIA_TYPES[message.type] &&
+                typeof message.body === 'string') ? message.body : '',
             caption: typeof message.caption === 'string'
                 ? message.caption : '',
             from_me: fromMe ? 1 : 0,
