@@ -40,6 +40,28 @@ releases and the AppStream metadata.
   PipeWire sessions caused unbounded memory growth; the existing WebEngine
   permission flow remains unchanged while the integration is redesigned.
 
+### Added
+
+- Added a "Export chat…" action in the Chat menu that exports a chat
+  transcript to a text file in the mobile export layout. The flow injects the
+  WPPConnect WA-JS bundle (downloaded once and cached under the application
+  data directory) into the active account's WhatsApp Web page, lists chats,
+  and fetches the last 100/1000 messages or the entire history. New
+  `zapzap.features.export_chat` and `zapzap.features.export_chat.ui` packages
+  were registered in `pyproject.toml` and in the architecture inventories.
+- Added optional media download to the chat export: when enabled, image,
+  video, audio, voice, sticker, document, and GIF attachments are decrypted
+  through WA-JS one at a time (with progress), saved to a sibling
+  `<export>_media` folder, and referenced in the transcript as
+  `<name> (file attached)`. Attachments that fail keep the `<Media omitted>`
+  placeholder.
+- Added a "Sync chats to database" toggle that continuously captures the
+  active account's messages into a local SQLite store
+  (`~/.local/share/zapzap/messages.db`, `chmod 600`) via the injected WA-JS
+  engine: full backfill on first run, per-chat cursor deltas on later opens,
+  and live capture while the app is open. Optional media is downloaded to a
+  sibling `chat_media/` folder. New `zapzap.features.chat_sync` package.
+
 ## [7.4.2] - 2026-08-14
 
 ### Fixed

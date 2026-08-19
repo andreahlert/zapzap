@@ -141,3 +141,12 @@ dmypy.json
 .idea
 
 tb*.txt
+# Agent artifacts (never commit)
+.superpowers/
+.claude/
+CLAUDE.md
+AGENTS.local.md
+**/settings.local.json
+**/scheduled_tasks.lock
+.apache-steward/
+docs/superpowers/

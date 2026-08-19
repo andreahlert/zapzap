@@ -15,6 +15,7 @@ from zapzap import __downloadPage__
 from zapzap.features.alerts.alert_manager import AlertManager
 from zapzap.features.alerts.external_url import open_external_url
 from zapzap.features.browser.shell.browser_controller import BrowserController
+from zapzap.features.export_chat.export_controller import ExportChatController
 from zapzap.features.settings.shell.settings_controller import SettingsController
 from zapzap.features.shortcuts.controller import ShortcutsController
 from zapzap.ui.components.main_window import MainWindowView
@@ -51,6 +52,8 @@ class MainWindowController(MainWindowView):
         self.app_settings = None
         self._last_sanitized_key = None
         self._send_message_dialog = None
+        self._export_chat_controller = None
+        self._chat_sync_engine = None
         self.theme_action_group = None
         self._setup_ui()
         self.update_state.changed.connect(self._on_update_info_changed)
@@ -136,6 +139,8 @@ class MainWindowController(MainWindowView):
         self.actionReload.triggered.connect(self.browser.reload_pages)
         self.actionNew_chat.triggered.connect(self.new_chat)
         self.actionBy_phone_number.triggered.connect(self.new_chat_by_phone)
+        self.actionExport_chat.triggered.connect(self.export_chat)
+        self.actionSync_chats.toggled.connect(self.toggle_chat_sync)
         self.actionSobre_o_ZapZap.triggered.connect(self.open_about)
 
     def _connect_view_menu_actions(self):
@@ -238,6 +243,54 @@ class MainWindowController(MainWindowView):
 
         if accepted and target is not None:
             page.page().open_chat_by_number(target)
+
+    def export_chat(self):
+        """Exportar as mensagens de uma conversa da página atual."""
+        page = self._current_page_or_alert()
+        if page is None:
+            return
+
+        if self._export_chat_controller is not None:
+            return
+
+        controller = ExportChatController(page.page(), self)
+        self._export_chat_controller = controller
+        controller.finished.connect(self._on_export_chat_finished)
+        controller.start()
+
+    def _on_export_chat_finished(self):
+        controller = self._export_chat_controller
+        self._export_chat_controller = None
+        if controller is not None:
+            controller.deleteLater()
+
+    def toggle_chat_sync(self, enabled):
+        """Start or stop background capture for the active account."""
+        if enabled:
+            page = self._current_page_or_alert()
+            if page is None:
+                self.actionSync_chats.blockSignals(True)
+                self.actionSync_chats.setChecked(False)
+                self.actionSync_chats.blockSignals(False)
+                return
+            from zapzap.features.chat_sync.sync_engine import ChatSyncEngine
+            engine = ChatSyncEngine(page.page(), self)
+            self._chat_sync_engine = engine
+            engine.state_changed.connect(self._on_chat_sync_state)
+            engine.start()
+        else:
+            if self._chat_sync_engine is not None:
+                self._chat_sync_engine.stop()
+                self._chat_sync_engine.deleteLater()
+                self._chat_sync_engine = None
+
+    def _on_chat_sync_state(self, state):
+        if state == "error" and self._chat_sync_engine is not None:
+            self._chat_sync_engine.deleteLater()
+            self._chat_sync_engine = None
+            self.actionSync_chats.blockSignals(True)
+            self.actionSync_chats.setChecked(False)
+            self.actionSync_chats.blockSignals(False)
 
     def _reset_zoom(self):
         """Resetar o fator de zoom da página atual."""

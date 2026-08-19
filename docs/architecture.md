@@ -452,10 +452,12 @@ remover arquivo tem efeito imediato, enquanto a seleção só persiste em
 | `accounts` | entidade e persistência de contas |
 | `alerts` | diálogos, abertura HTTPS externa e feedback compartilhados |
 | `browser` | perfis, páginas, sidebar, scripts e navegação |
+| `chat_sync` | captura contínua de mensagens para SQLite via WA-JS, com backfill e MCP read-only |
 | `customizations` | CSS, JavaScript e extensões por escopo |
 | `dictionaries` | descoberta, seleção global/migração e instalação de dicionários WebEngine |
 | `donation` | lembrete, métodos oficiais e página nativa de apoio |
 | `downloads` | destino, nome seguro e diálogo de progresso |
+| `export_chat` | exportação de conversas em texto e mídia via WA-JS injetado na página |
 | `initial_setup` | onboarding e persistência das escolhas iniciais |
 | `notifications` | fachada, backends e ativação da janela |
 | `permissions` | permissões WebEngine por conta |
@@ -545,11 +547,14 @@ Este bloco é verificado automaticamente contra
 - `zapzap.features.browser`
 - `zapzap.features.browser.shell`
 - `zapzap.features.browser.web`
+- `zapzap.features.chat_sync`
 - `zapzap.features.customizations`
 - `zapzap.features.dictionaries`
 - `zapzap.features.donation`
 - `zapzap.features.downloads`
 - `zapzap.features.downloads.ui`
+- `zapzap.features.export_chat`
+- `zapzap.features.export_chat.ui`
 - `zapzap.features.initial_setup`
 - `zapzap.features.notifications`
 - `zapzap.features.permissions`

@@ -124,6 +124,10 @@ documente o que ele protege.
 - `test_appimage_packaging.py`
 - `test_browser_account_lifecycle.py`
 - `test_browser_page_button_ui.py`
+- `test_chat_sync_db.py`
+- `test_chat_sync_engine.py`
+- `test_chat_sync_logic.py`
+- `test_chat_sync_paths.py`
 - `test_check_box.py`
 - `test_component_typography.py`
 - `test_debugging_settings_ui.py`
@@ -133,6 +137,8 @@ documente o que ele protege.
 - `test_dictionary_options.py`
 - `test_documentation_structure.py`
 - `test_donations_page.py`
+- `test_export_chat_formatter.py`
+- `test_export_chat_media_writer.py`
 - `test_external_link_lifecycle.py`
 - `test_gpu_environment.py`
 - `test_grid_thumbnail_cache.py`
